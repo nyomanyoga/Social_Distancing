@@ -7,37 +7,33 @@ import calc, plot
 
 confid = 0.5
 thresh = 0.5
-mouse_pts = []
+click_mouse = []
 
-def get_mouse_points(event, x, y, flags, param):
-    global mouse_pts
+def mouse_click(event, x, y, flags, param):
+    global click_mouse
     if event == cv2.EVENT_LBUTTONDOWN:
-        if len(mouse_pts) < 4:
+        if len(click_mouse) < 4:
             cv2.circle(image, (x, y), 5, (0, 0, 255), 10)
         else:
             cv2.circle(image, (x, y), 5, (255, 0, 0), 10)        
-        if len(mouse_pts) >= 1 and len(mouse_pts) <= 3:
-            cv2.line(image, (x, y), (mouse_pts[len(mouse_pts)-1][0], mouse_pts[len(mouse_pts)-1][1]), (70, 70, 70), 2)
-            if len(mouse_pts) == 3:
-                cv2.line(image, (x, y), (mouse_pts[0][0], mouse_pts[0][1]), (70, 70, 70), 2)    
-        if "mouse_pts" not in globals():
-            mouse_pts = []
-        mouse_pts.append((x, y))
-        #print("Point detected")
-        #print(mouse_pts)
-        
+        if len(click_mouse) >= 1 and len(click_mouse) <= 3:
+            cv2.line(image, (x, y), (click_mouse[len(click_mouse)-1][0], click_mouse[len(click_mouse)-1][1]), (70, 70, 70), 2)
+            if len(click_mouse) == 3:
+                cv2.line(image, (x, y), (click_mouse[0][0], click_mouse[0][1]), (70, 70, 70), 2)    
+        if "click_mouse" not in globals():
+            click_mouse = []
+        click_mouse.append((x, y))
 
-def calculate_social_distancing(vid_path, net, output_dir, ln1):
+def calculate_distancing(vid_path, net, output_dir, ln1):
     count = 0
     vs = cv2.VideoCapture(vid_path)    
     # Get video height, width and fps
     height = int(vs.get(cv2.CAP_PROP_FRAME_HEIGHT))
     width = int(vs.get(cv2.CAP_PROP_FRAME_WIDTH))
     fps = int(vs.get(cv2.CAP_PROP_FPS))
-       
+
     points = []
     global image
-    
     while True:
         (grabbed, frame) = vs.read()
         if not grabbed:
@@ -51,11 +47,11 @@ def calculate_social_distancing(vid_path, net, output_dir, ln1):
                 image = frame
                 cv2.imshow("image", image)
                 cv2.waitKey(1)
-                if len(mouse_pts) == 8:
+                if len(click_mouse) == 8:
                     cv2.destroyWindow("image")
                     break
-            points = mouse_pts      
-                 
+            points = click_mouse      
+
         src = np.float32(np.array(points[:4]))
         dst = np.float32([[0, H], [W, H], [W, 0], [0, 0]])
         prespective_transform = cv2.getPerspectiveTransform(src, dst)
@@ -67,7 +63,7 @@ def calculate_social_distancing(vid_path, net, output_dir, ln1):
         distance_h = np.sqrt((warped_pt[0][0] - warped_pt[2][0]) ** 2 + (warped_pt[0][1] - warped_pt[2][1]) ** 2)
         pnts = np.array(points[:4], np.int32)
         cv2.polylines(frame, [pnts], True, (70, 70, 70), thickness=2)
-    
+
         # models
         blob = cv2.dnn.blobFromImage(frame, 1 / 255.0, (416, 416), swapRB=True, crop=False)
         net.setInput(blob)
@@ -103,33 +99,32 @@ def calculate_social_distancing(vid_path, net, output_dir, ln1):
             count = count + 1
             continue
 
-        person_points = calc.get_transformed_points(boxes1, prespective_transform)
-        distances_mat, bxs_mat = calc.get_distances(boxes1, person_points, distance_w, distance_h)
+        person = calc.get_transformed_points(boxes1, prespective_transform)
+        distances_mat, bxs_mat = calc.get_distances(boxes1, person, distance_w, distance_h)
         risk_count = calc.get_count(distances_mat)
         frame1 = np.copy(frame)  
         img = plot.social_distancing_view(frame1, bxs_mat, boxes1, risk_count)
-        
+
         # write image fps
         if count != 0:
             cv2.imwrite(output_dir+"frame%d.jpg" % count, img)
-    
+
         count = count + 1
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break;
     vs.release()
     cv2.destroyAllWindows() 
-        
 
 if __name__== "__main__":
     # Receives arguements specified by user
     parser = argparse.ArgumentParser()
-    parser.add_argument('-v', '--video_path', action='store', dest='video_path', default='./data/ex.avi' ,
+    parser.add_argument('-v', '--video_path', action='store', dest='video_path', default='./data/social_disctancing.mp4' ,
                     help='Path for input video')
     parser.add_argument('-o', '--output_dir', action='store', dest='output_dir', default='./output/' ,
                     help='Path for Output images')
     parser.add_argument('-m', '--model', action='store', dest='model', default='./models/',
                     help='Path for models directory')
-                    
+
     values = parser.parse_args()   
     model_path = values.model
     if model_path[len(model_path) - 1] != '/':
@@ -137,7 +132,7 @@ if __name__== "__main__":
     output_dir = values.output_dir
     if output_dir[len(output_dir) - 1] != '/':
         output_dir = output_dir + '/'
-
+        
     # load Yolov3 weights
     weightsPath = model_path + "yolov3.weights"
     configPath = model_path + "yolov3.cfg"
@@ -148,7 +143,7 @@ if __name__== "__main__":
 
     # set mouse callback 
     cv2.namedWindow("image")
-    cv2.setMouseCallback("image", get_mouse_points)
+    cv2.setMouseCallback("image", mouse_click)
     np.random.seed(42)
     
-    calculate_social_distancing(values.video_path, net_yl, output_dir, ln1)
+    calculate_distancing(values.video_path, net_yl, output_dir, ln1)
