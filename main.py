@@ -118,7 +118,7 @@ def calculate_distancing(vid_path, net, output_dir, ln1):
 if __name__== "__main__":
     # Receives arguements specified by user
     parser = argparse.ArgumentParser()
-    parser.add_argument('-v', '--video_path', action='store', dest='video_path', default='./data/social_disctancing.mp4' ,
+    parser.add_argument('-v', '--video_path', action='store', dest='video_path', default='./data/ex.avi' ,
                     help='Path for input video')
     parser.add_argument('-o', '--output_dir', action='store', dest='output_dir', default='./output/' ,
                     help='Path for Output images')
