@@ -7,24 +7,24 @@ import calc, plot
 
 confid = 0.5
 thresh = 0.5
-click_mouse = []
+click = []
 
 def mouse_click(event, x, y, flags, param):
-    global click_mouse
+    global click
     if event == cv2.EVENT_LBUTTONDOWN:
-        if len(click_mouse) < 4:
-            cv2.circle(image, (x, y), 5, (0, 0, 255), 10)
+        if len(click) < 4:
+            cv2.circle(img, (x, y), 5, (0, 0, 255), 10)
         else:
-            cv2.circle(image, (x, y), 5, (255, 0, 0), 10)        
-        if len(click_mouse) >= 1 and len(click_mouse) <= 3:
-            cv2.line(image, (x, y), (click_mouse[len(click_mouse)-1][0], click_mouse[len(click_mouse)-1][1]), (70, 70, 70), 2)
-            if len(click_mouse) == 3:
-                cv2.line(image, (x, y), (click_mouse[0][0], click_mouse[0][1]), (70, 70, 70), 2)    
-        if "click_mouse" not in globals():
-            click_mouse = []
-        click_mouse.append((x, y))
+            cv2.circle(img, (x, y), 5, (255, 0, 0), 10)        
+        if len(click) >= 1 and len(click) <= 3:
+            cv2.line(img, (x, y), (click[len(click)-1][0], click[len(click)-1][1]), (70, 70, 70), 2)
+            if len(click) == 3:
+                cv2.line(img, (x, y), (click[0][0], click[0][1]), (70, 70, 70), 2)    
+        if "click" not in globals():
+            click = []
+        click.append((x, y))
 
-def calculate_distancing(vid_path, net, output_dir, ln1):
+def calc_dis(vid_path, net, output_dir, ln1):
     count = 0
     vs = cv2.VideoCapture(vid_path)    
     # Get video height, width and fps
@@ -33,7 +33,7 @@ def calculate_distancing(vid_path, net, output_dir, ln1):
     fps = int(vs.get(cv2.CAP_PROP_FPS))
 
     points = []
-    global image
+    global img
     while True:
         (grabbed, frame) = vs.read()
         if not grabbed:
@@ -44,13 +44,13 @@ def calculate_distancing(vid_path, net, output_dir, ln1):
         # first frame will be used to draw ROI and horizontal and vertical 180 cm distance(unit length in both directions)
         if count == 0:
             while True:
-                image = frame
-                cv2.imshow("image", image)
+                img = frame
+                cv2.imshow("img", img)
                 cv2.waitKey(1)
-                if len(click_mouse) == 8:
-                    cv2.destroyWindow("image")
+                if len(click) == 8:
+                    cv2.destroyWindow("img")
                     break
-            points = click_mouse      
+            points = click      
 
         src = np.float32(np.array(points[:4]))
         dst = np.float32([[0, H], [W, H], [W, 0], [0, 0]])
@@ -105,7 +105,7 @@ def calculate_distancing(vid_path, net, output_dir, ln1):
         frame1 = np.copy(frame)  
         img = plot.social_distancing_view(frame1, bxs_mat, boxes1, risk_count)
 
-        # write image fps
+        # write img fps
         if count != 0:
             cv2.imwrite(output_dir+"frame%d.jpg" % count, img)
 
@@ -121,7 +121,7 @@ if __name__== "__main__":
     parser.add_argument('-v', '--video_path', action='store', dest='video_path', default='./data/ex.avi' ,
                     help='Path for input video')
     parser.add_argument('-o', '--output_dir', action='store', dest='output_dir', default='./output/' ,
-                    help='Path for Output images')
+                    help='Path for Output imgs')
     parser.add_argument('-m', '--model', action='store', dest='model', default='./models/',
                     help='Path for models directory')
 
@@ -142,8 +142,8 @@ if __name__== "__main__":
     ln1 = [ln[i[0] - 1] for i in net_yl.getUnconnectedOutLayers()]
 
     # set mouse callback 
-    cv2.namedWindow("image")
-    cv2.setMouseCallback("image", mouse_click)
+    cv2.namedWindow("img")
+    cv2.setMouseCallback("img", mouse_click)
     np.random.seed(42)
     
-    calculate_distancing(values.video_path, net_yl, output_dir, ln1)
+    calc_dis(values.video_path, net_yl, output_dir, ln1)
