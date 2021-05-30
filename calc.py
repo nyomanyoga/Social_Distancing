@@ -1,69 +1,63 @@
-# imports
 import cv2
 import numpy as np
 
-# Function to calculate bottom center for all bounding boxes and transform prespective for all points.
-def get_transformed_points(boxes, prespective_transform):
-    bottom_points = []
-    for box in boxes:
-        pnts = np.array([[[int(box[0]+(box[2]*0.5)),int(box[1]+box[3])]]] , dtype="float32")
-        #pnts = np.array([[[int(box[0]+(box[2]*0.5)),int(box[1]+(box[3]*0.5))]]] , dtype="float32")
-        bd_pnt = cv2.perspectiveTransform(pnts, prespective_transform)[0][0]
-        pnt = [int(bd_pnt[0]), int(bd_pnt[1])]
-        bottom_points.append(pnt)       
-    return bottom_points
+def get_transformed_points(kotak, sudut):
+    poinbawah = []
+    for petak in kotak:
+        poins=np.array([[[int(petak[0]+(petak[2]*0.5)),int(petak[1]+petak[3])]]],dtype="float32")
+        poin=cv2.perspectiveTransform(poins,sudut)[0][0]
+        titik=[int(poin[0]),int(poin[1])]
+        poinbawah.append(titik)
+    return poinbawah
 
-def cal_dis(p1, p2, distance_w, distance_h):
-    h = abs(p2[1]-p1[1])
-    w = abs(p2[0]-p1[0]) 
-    dis_w = float((w/distance_w)*180)
-    dis_h = float((h/distance_h)*180)
-    return int(np.sqrt(((dis_h)**2) + ((dis_w)**2)))
+def cal_dis(a, b, jarakw, jarakh):
+    h=abs(b[1]-a[1])
+    w=abs(b[0]-a[0])
+    jarw=float((w/jarakw)*180)
+    jarh=float((h/jarakh)*180)
+    return int(np.sqrt(((jarh)**2)+((jarw)**2)))
 
-# Function calculates distance between all pairs and calculates closeness ratio.
-def get_distances(boxes1, bottom_points, distance_w, distance_h):
-    distance_mat = []
-    bxs = []
-    for i in range(len(bottom_points)):
-        for j in range(len(bottom_points)):
-            if i != j:
-                dist = cal_dis(bottom_points[i], bottom_points[j], distance_w, distance_h)
-                #dist = int((dis*180)/distance)
-                if dist <= 150:
-                    closeness = 0
-                    distance_mat.append([bottom_points[i], bottom_points[j], closeness])
-                    bxs.append([boxes1[i], boxes1[j], closeness])
-                elif dist > 150 and dist <=180:
-                    closeness = 1
-                    distance_mat.append([bottom_points[i], bottom_points[j], closeness])
-                    bxs.append([boxes1[i], boxes1[j], closeness])       
+def get_distances(kotak1, poinbawah, jarakw, jarakh):
+    jarakmat = []
+    ktk = []
+    for i in range(len(poinbawah)):
+        for j in range(len(poinbawah)):
+            if i!=j:
+                jar=cal_dis(poinbawah[i], poinbawah[j], jarakw, jarakh)
+                if jar<=150:
+                    kedekatan=0
+                    jarakmat.append([poinbawah[i], poinbawah[j], kedekatan])
+                    ktk.append([kotak1[i], kotak1[j], kedekatan])
+                elif jar>150 and jar<=180:
+                    kedekatan=1
+                    jarakmat.append([poinbawah[i], poinbawah[j], kedekatan])
+                    ktk.append([kotak1[i], kotak1[j], kedekatan])
                 else:
-                    closeness = 2
-                    distance_mat.append([bottom_points[i], bottom_points[j], closeness])
-                    bxs.append([boxes1[i], boxes1[j], closeness])              
-    return distance_mat, bxs
-    
-# Function gives count for humans at high risk, low risk and no risk    
+                    kedekatan=2
+                    jarakmat.append([poinbawah[i], poinbawah[j], kedekatan])
+                    ktk.append([kotak1[i], kotak1[j], kedekatan])
+    return jarakmat, ktk
+
 def get_count(distances_mat):
-    r = []
-    g = []
-    y = []
+    red=[]
+    yellow=[]
+    green=[]
     for i in range(len(distances_mat)):
         if distances_mat[i][2] == 0:
-            if (distances_mat[i][0] not in r) and (distances_mat[i][0] not in g) and (distances_mat[i][0] not in y):
-                r.append(distances_mat[i][0])
-            if (distances_mat[i][1] not in r) and (distances_mat[i][1] not in g) and (distances_mat[i][1] not in y):
-                r.append(distances_mat[i][1])         
+            if (distances_mat[i][0] not in red) and (distances_mat[i][0] not in green) and (distances_mat[i][0] not in yellow):
+                red.append(distances_mat[i][0])
+            if (distances_mat[i][1] not in red) and (distances_mat[i][1] not in green) and (distances_mat[i][1] not in yellow):
+                red.append(distances_mat[i][1])
     for i in range(len(distances_mat)):
         if distances_mat[i][2] == 1:
-            if (distances_mat[i][0] not in r) and (distances_mat[i][0] not in g) and (distances_mat[i][0] not in y):
-                y.append(distances_mat[i][0])
-            if (distances_mat[i][1] not in r) and (distances_mat[i][1] not in g) and (distances_mat[i][1] not in y):
-                y.append(distances_mat[i][1])
+            if (distances_mat[i][0] not in red) and (distances_mat[i][0] not in green) and (distances_mat[i][0] not in yellow):
+                yellow.append(distances_mat[i][0])
+            if (distances_mat[i][1] not in red) and (distances_mat[i][1] not in green) and (distances_mat[i][1] not in yellow):
+                yellow.append(distances_mat[i][1])
     for i in range(len(distances_mat)):
         if distances_mat[i][2] == 2:
-            if (distances_mat[i][0] not in r) and (distances_mat[i][0] not in g) and (distances_mat[i][0] not in y):
-                g.append(distances_mat[i][0])
-            if (distances_mat[i][1] not in r) and (distances_mat[i][1] not in g) and (distances_mat[i][1] not in y):
-                g.append(distances_mat[i][1])
-    return (len(r),len(y),len(g))
+            if (distances_mat[i][0] not in red) and (distances_mat[i][0] not in green) and (distances_mat[i][0] not in yellow):
+                green.append(distances_mat[i][0])
+            if (distances_mat[i][1] not in red) and (distances_mat[i][1] not in green) and (distances_mat[i][1] not in yellow):
+                green.append(distances_mat[i][1])
+    return (len(red),len(yellow),len(green))
