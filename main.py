@@ -1,5 +1,5 @@
 # imports
-import cv2, time, argparse
+import cv2, time, argparse, json
 import numpy as np
 
 # own modules
@@ -8,6 +8,14 @@ import calc, plot
 confid = 0.5
 thresh = 0.5
 click = []
+
+def create_json(r, yel, g):
+    result_json = dict(High=r, Low=yel, Safe=g)
+    
+    with open('result_json.json', 'w') as result:
+        json.dump(result_json, result)
+
+    return "Done"
 
 def mouse_click(event, x, y, flags, param):
     global click
@@ -25,6 +33,9 @@ def mouse_click(event, x, y, flags, param):
         click.append((x, y))
 
 def calc_dis(vid_path, net, output_dir, ln1):
+    r = []
+    yel =[]
+    g = []
     count = 0
     vs = cv2.VideoCapture(vid_path)    
     # Get video height, width and fps
@@ -36,8 +47,10 @@ def calc_dis(vid_path, net, output_dir, ln1):
     global img
     while True:
         (grabbed, frame) = vs.read()
+        # result json data
         if not grabbed:
-            print('here')
+            print(create_json(r, yel, g))
+            # print('Done')
             break
         (H, W) = frame.shape[:2]
         
@@ -51,7 +64,6 @@ def calc_dis(vid_path, net, output_dir, ln1):
                     cv2.destroyWindow("img")
                     break
             points = click      
-
         src = np.float32(np.array(points[:4]))
         dst = np.float32([[0, H], [W, H], [W, 0], [0, 0]])
         prespective_transform = cv2.getPerspectiveTransform(src, dst)
@@ -98,17 +110,19 @@ def calc_dis(vid_path, net, output_dir, ln1):
         if len(boxes1) == 0:
             count = count + 1
             continue
-
         person = calc.get_transformed_points(boxes1, prespective_transform)
         distances_mat, bxs_mat = calc.get_distances(boxes1, person, distance_w, distance_h)
         risk_count = calc.get_count(distances_mat)
+
+        r.append(risk_count[0])
+        yel.append(risk_count[1])
+        g.append(risk_count[2])
+        
         frame1 = np.copy(frame)  
         img = plot.social_distancing_view(frame1, bxs_mat, boxes1, risk_count)
-
         # write img fps
         if count != 0:
             cv2.imwrite(output_dir+"frame%d.jpg" % count, img)
-
         count = count + 1
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break;
