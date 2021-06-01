@@ -1,6 +1,7 @@
 # imports
 import cv2, time, argparse, json
 import numpy as np
+from flask import Flask
 
 # own modules
 import calc, plot
@@ -15,7 +16,8 @@ def create_json(r, yel, g):
     with open('result_json.json', 'w') as result:
         json.dump(result_json, result)
 
-    return "Done"
+    # return "Done"
+    return result_json
 
 def mouse_click(event, x, y, flags, param):
     global click
@@ -49,7 +51,7 @@ def calc_dis(vid_path, net, output_dir, ln1):
         (grabbed, frame) = vs.read()
         # result json data
         if not grabbed:
-            print(create_json(r, yel, g))
+            return create_json(r, yel, g)
             # print('Done')
             break
         (H, W) = frame.shape[:2]
@@ -129,7 +131,7 @@ def calc_dis(vid_path, net, output_dir, ln1):
     vs.release()
     cv2.destroyAllWindows() 
 
-if __name__== "__main__":
+def main():
     # Receives arguements specified by user
     parser = argparse.ArgumentParser()
     parser.add_argument('-v', '--video_path', action='store', dest='video_path', default='./data/ex.avi' ,
@@ -160,4 +162,14 @@ if __name__== "__main__":
     cv2.setMouseCallback("img", mouse_click)
     np.random.seed(42)
     
-    calc_dis(values.video_path, net_yl, output_dir, ln1)
+    return calc_dis(values.video_path, net_yl, output_dir, ln1)
+
+
+application = Flask(__name__)
+
+@application.route('/')
+def index():
+    return main()
+
+if __name__ == '__main__':
+    application.run(debug=True)
