@@ -1,5 +1,5 @@
 # imports
-import cv2, time, argparse, json
+import cv2, time, argparse, json, os
 import numpy as np
 from flask import Flask
 
@@ -136,6 +136,11 @@ def calc_dis(vid_path, net, output_dir, ln1):
     cv2.destroyAllWindows() 
 
 def main():
+    # Make folder output
+    newpath = r'.\output' 
+    if not os.path.exists(newpath):
+        os.makedirs(newpath)
+
     # Receives arguements specified by user
     parser = argparse.ArgumentParser()
     parser.add_argument('-v', '--video_path', action='store', dest='video_path', default='./data/ex.mp4' ,
