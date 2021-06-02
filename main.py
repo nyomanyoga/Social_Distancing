@@ -155,7 +155,6 @@ def main():
         
     # load Yolov3 weights
     weightsPath = model_path + "yolov3.weights"
-    # weightsPath = "https://storage.googleapis.com/social-distancing-monitoring-b21/models/yolov3.weights"
     configPath = model_path + "yolov3.cfg"
 
     net_yl = cv2.dnn.readNetFromDarknet(configPath, weightsPath)
