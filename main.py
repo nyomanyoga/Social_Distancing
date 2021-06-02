@@ -10,14 +10,17 @@ confid = 0.5
 thresh = 0.5
 click = []
 
-def create_json(r, yel, g):
-    result_json = dict(High=r, Low=yel, Safe=g)
+def create_json(r, yel, g, link_img):
+    total_json = dict(High=r, Low=yel, Safe=g)
+    image_json = dict(Image=link_img)
     
-    with open('result_json.json', 'w') as result:
-        json.dump(result_json, result)
+    with open('total_json.json', 'w') as result:
+        json.dump(total_json, result)
 
-    # return "Done"
-    return result_json
+    with open('image_json.json', 'w') as result:
+        json.dump(image_json, result)
+
+    return image_json
 
 def mouse_click(event, x, y, flags, param):
     global click
@@ -38,6 +41,7 @@ def calc_dis(vid_path, net, output_dir, ln1):
     r = []
     yel =[]
     g = []
+    link_img=[]
     count = 0
     vs = cv2.VideoCapture(vid_path)    
     # Get video height, width and fps
@@ -51,7 +55,7 @@ def calc_dis(vid_path, net, output_dir, ln1):
         (grabbed, frame) = vs.read()
         # result json data
         if not grabbed:
-            return create_json(r, yel, g)
+            return create_json(r, yel, g, link_img)
             # print('Done')
             break
         (H, W) = frame.shape[:2]
@@ -115,16 +119,16 @@ def calc_dis(vid_path, net, output_dir, ln1):
         person = calc.get_transformed_points(boxes1, prespective_transform)
         distances_mat, bxs_mat = calc.get_distances(boxes1, person, distance_w, distance_h)
         risk_count = calc.get_count(distances_mat)
-
-        r.append(risk_count[0])
-        yel.append(risk_count[1])
-        g.append(risk_count[2])
         
         frame1 = np.copy(frame)  
         img = plot.social_distancing_view(frame1, bxs_mat, boxes1, risk_count)
         # write img fps
-        if count != 0:
+        if count != 0 and risk_count[0] != 0:
+            r.append(risk_count[0])
+            yel.append(risk_count[1])
+            g.append(risk_count[2])
             cv2.imwrite(output_dir+"frame%d.jpg" % count, img)
+            link_img.append("https://storage.googleapis.com/social-distancing-monitoring-b21/output/frame%d.jpg" % count)
         count = count + 1
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break;
@@ -134,7 +138,7 @@ def calc_dis(vid_path, net, output_dir, ln1):
 def main():
     # Receives arguements specified by user
     parser = argparse.ArgumentParser()
-    parser.add_argument('-v', '--video_path', action='store', dest='video_path', default='./data/ex.avi' ,
+    parser.add_argument('-v', '--video_path', action='store', dest='video_path', default='./data/ex.mp4' ,
                     help='Path for input video')
     parser.add_argument('-o', '--output_dir', action='store', dest='output_dir', default='./output/' ,
                     help='Path for Output imgs')
@@ -151,6 +155,7 @@ def main():
         
     # load Yolov3 weights
     weightsPath = model_path + "yolov3.weights"
+    # weightsPath = "https://pjreddie.com/media/files/yolov3.weights"
     configPath = model_path + "yolov3.cfg"
 
     net_yl = cv2.dnn.readNetFromDarknet(configPath, weightsPath)
@@ -165,6 +170,8 @@ def main():
     return calc_dis(values.video_path, net_yl, output_dir, ln1)
 
 
+
+# Flask
 application = Flask(__name__)
 
 @application.route('/')
