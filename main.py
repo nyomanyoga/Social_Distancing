@@ -1,5 +1,5 @@
 # imports
-import cv2, time, argparse, json, os
+import cv2, time, argparse, json, os, shutil
 import numpy as np
 from flask import Flask
 
@@ -136,10 +136,13 @@ def calc_dis(vid_path, net, output_dir, ln1):
     cv2.destroyAllWindows() 
 
 def main():
-    # Make folder output
-    newpath = r'.\output' 
-    if not os.path.exists(newpath):
-        os.makedirs(newpath)
+    # Make and remove directory output
+    Path = './output' 
+    if not os.path.exists(Path):
+        os.makedirs(Path)
+    else :
+        shutil.rmtree(Path)
+        os.makedirs(Path)
 
     # Receives arguements specified by user
     parser = argparse.ArgumentParser()
