@@ -2,6 +2,7 @@
 import cv2, time, argparse, json, os, shutil
 import numpy as np
 from flask import Flask
+from google.cloud import storage
 
 # own modules
 import calc, plot
@@ -13,6 +14,13 @@ click = []
 def create_json(r, yel, g, link_img):
     total_json = dict(High=r, Low=yel, Safe=g)
     image_json = dict(Image=link_img)
+    client = storage.Client.from_service_account_json(json_credentials_path='auth/auth.json')
+    # Creating bucket object
+    bucket = client.get_bucket('social-distancing-monitoring-b21')
+    # Name of the object to be stored in the bucket
+    object_name_in_gcs_bucket = bucket.blob("image_json.json")
+    # Name of the object in local file system
+    object_name_in_gcs_bucket.upload_from_filename("image_json.json")
     
     with open('total_json.json', 'w') as result:
         json.dump(total_json, result)
@@ -101,8 +109,16 @@ def calc_dis(vid_path, net, output_dir, ln1):
             r.append(risk_count[0])
             yel.append(risk_count[1])
             g.append(risk_count[2])
-            cv2.imwrite(output_dir+"frame%d.jpg" % count, img)
-            link_img.append("https://storage.googleapis.com/social-distancing-monitoring-b21/output/frame%d.jpg" % count)
+            cv2.imwrite(output_dir+"frame%d.jpg" % count, img,[cv2.IMWRITE_JPEG_QUALITY, 50])
+           # Setting credentials using the downloaded JSON file
+            client = storage.Client.from_service_account_json(json_credentials_path='auth/auth.json')
+            # Creating bucket object
+            bucket = client.get_bucket('social-distancing-monitoring-b21')
+            # Name of the object to be stored in the bucket
+            object_name_in_gcs_bucket = bucket.blob("frame%d.jpg" % count)
+            # Name of the object in local file system
+            object_name_in_gcs_bucket.upload_from_filename(output_dir+"frame%d.jpg" % count)
+            link_img.append("https://storage.googleapis.com/social-distancing-monitoring-b21/frame%d.jpg" % count)
         count = count + 1
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break;
@@ -144,4 +160,4 @@ def index():
     return main()
 
 if __name__ == '__main__':
-    application.run(debug=True)
+    application.run(host="0.0.0.0",debug=True)
