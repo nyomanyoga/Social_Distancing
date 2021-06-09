@@ -143,7 +143,7 @@ def main():
         
     # load Yolov3 weights
     weightsPath = model_path + "yolov3.weights"
-    configPath = model_path + "yolov3.cfg"
+    configPath = model_path + "mymodel.cfg"
 
     net_yl = cv2.dnn.readNetFromDarknet(configPath, weightsPath)
     ln = net_yl.getLayerNames()
