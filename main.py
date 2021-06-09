@@ -126,7 +126,7 @@ def calc_dis(vid_path, net, output_dir, ln1):
 def main():
     # Receives arguements specified by user
     parser = argparse.ArgumentParser()
-    parser.add_argument('-v', '--video_path', action='store', dest='video_path', default='./data/ex.mp4' ,
+    parser.add_argument('-v', '--video_path', action='store', dest='video_path', default='./data/data.mp4' ,
                     help='Path for input video')
     parser.add_argument('-o', '--output_dir', action='store', dest='output_dir', default='./output/' ,
                     help='Path for Output imgs')
